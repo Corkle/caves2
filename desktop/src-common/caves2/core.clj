@@ -2,7 +2,7 @@
   (:require [play-clj.core :refer :all]
             [play-clj.ui :refer :all]))
 
-(declare caves2-game title-screen main-screen debug-screen win-screen lose-screen-onshow-)
+(declare caves2-game title-screen main-screen debug-screen win-screen lose-screen)
 
 ;; ====================================================================================
 ;; Title Screen
@@ -12,7 +12,7 @@
   (fn [screen entities]
     (update! screen :renderer (stage) :camera (orthographic))
     (let [text1 (assoc (label "Welcome to the Caves of Clojure!" (color :white)) :x 300 :y 400)
-          text2 (assoc (label "Press enter to win, anything else to lose." (color :white)) :x 285 :y 350)]
+          text2 (assoc (label "Press enter to win, anything else to lose." (color :white)) :x 280 :y 350)]
           [text1 text2]))
 
   :on-render
@@ -25,7 +25,8 @@
     (cond
       (= (:key screen) (key-code :enter)) (set-screen! caves2-game win-screen debug-screen)
       (= (:key screen) (key-code :space)) (set-screen! caves2-game main-screen debug-screen)
-      (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen))))
+      (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen))
+      :else (set-screen! caves2-game lose-screen debug-screen)))
 
   :on-resize
   (fn [screen entities]
@@ -64,13 +65,23 @@
   (fn [screen entities]
     (update! screen :camera (orthographic) :renderer (stage))
     (let [text1 (assoc (label "Congratulations, you win!" (color :green)) :x 300 :y 400)
-          text2 (assoc (label "Press escape to exit, anything else to restart." (color :white)) :x 300 :y 400)]
+          text2 (assoc (label "Press escape to exit, anything else to restart." (color :white)) :x 240 :y 350)]
       [text1 text2]))
 
   :on-render
   (fn [screen entities]
     (clear!)
     (render! screen entities))
+
+  :on-key-down
+  (fn [screen entities]
+    (cond
+      (= (:key screen) (key-code :escape)) (app! :exit)
+      :else (on-gl (set-screen! caves2-game title-screen debug-screen))))
+
+  :on-resize
+  (fn [screen entities]
+    (height! screen 600))
   )
 
 ;; ====================================================================================
@@ -80,13 +91,24 @@
   :on-show
   (fn [screen entities]
     (update! screen :camera (orthographic) :renderer (stage))
-    (assoc (label "Sorry, better luck next time." (color :red)))
-    (assoc (label "Press escape to exit, anything else to restart." (color :white))))
+    (let [text1 (assoc (label "Sorry, better luck next time." (color :red)) :x 300 :y 400)
+          text2 (assoc (label "Press escape to exit, anything else to restart." (color :white)) :x 240 :y 350)]
+      [text1 text2]))
 
   :on-render
   (fn [screen entities]
     (clear!)
     (render! screen entities))
+
+  :on-key-down
+  (fn [screen entities]
+    (cond
+      (= (:key screen) (key-code :escape)) (app! :exit)
+      :else (on-gl (set-screen! caves2-game title-screen debug-screen))))
+
+  :on-resize
+  (fn [screen entities]
+    (height! screen 600))
   )
 
 ;; ====================================================================================
@@ -96,15 +118,15 @@
   :on-show
   (fn [screen entities]
     (update! screen :camera (orthographic) :renderer (stage))
-    (let [debugger (assoc (label "0" (color :white)) :id :fps :x 5 :show-debugger false)][debugger]))
+    (let [debugger (assoc (label "0" (color :green)) :id :debug :x 5 :show-debug true)][debugger]))
 
   :on-render
   (fn [screen entities]
-    (->> (for [entity entities]
-           (case (:id entity)
-             :fps (doto entity (label! :set-text (str "FPS:" (game :fps) " W:" (game :width) " H:" (game :height))))
-             entity))
-         (render! screen)))
+    (let [debugger (first entities)]
+      (if (:show-debug debugger)
+        (do
+          (label! debugger :set-text (str "FPS:" (game :fps) " W:" (game :width) " H:" (game :height)))
+          (render! screen (into [debugger] (rest entities)))))))
 
   :on-resize
   (fn [screen entities]
@@ -112,9 +134,10 @@
 
   :on-key-down
   (fn [screen entities]
-    (cond
-;;       (= (:key screen) (key-code :f12)) (update )
-      (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen))))
+    (let [debugger (first entities)]
+      (cond
+        (= (:key screen) (key-code :f12)) (update debugger :show-debug not)
+        (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen)))))
   )
 
 ;; ====================================================================================
@@ -155,4 +178,8 @@
 
 (-> main-screen :entities deref)
 
+(-> debug-screen :screen deref)
+
 (-> debug-screen :entities deref)
+
+(-> win-screen :entities deref)
