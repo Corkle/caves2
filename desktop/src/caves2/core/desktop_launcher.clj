@@ -6,5 +6,5 @@
 
 (defn -main
   []
-  (LwjglApplication. caves2-game "caves2" 800 600)
+  (LwjglApplication. caves2-game "caves2" (first screen-size) (second screen-size))
   (Keyboard/enableRepeatEvents true))
