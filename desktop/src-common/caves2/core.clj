@@ -19,8 +19,8 @@
     (update! screen :renderer (stage) :camera (orthographic))
     (let [text1 (assoc (label "Welcome to the Caves of Clojure!" (color :white)) :x 300 :y 400)
           text2 (assoc (label "Press enter to play." (color :white)) :x 345 :y 350)
-          block1 (assoc (texture "stone-black.jpg") :width 20 :height 20 :x 20 :y 20)
-          block2 (assoc (texture "stone-wall.jpg") :width 20 :height 20 :x 40 :y 20)]
+          block1 (assoc (texture "stone-black.jpg") :width (scale-up 2) :height (scale-up 2) :x (scale-up 0) :y (scale-up 1))
+          block2 (assoc (texture "stone-wall.jpg") :width (scale-up 1) :height (scale-up 1) :x (scale-up 2) :y (scale-up 1))]
           [text1 text2 block1 block2]))
 
   :on-render
@@ -53,15 +53,20 @@
         start-y 0
         end-x (+ start-x vcols)
         end-y (+ start-y vrows)]
-    (
-;;
-      )))
+    (for [[vrow-idx mrow-idx] (map vector (range 0 vrows) (range start-y end-y))
+            :let [row-tiles (subvec (tiles mrow-idx) start-x end-x)]]
+      (for [vcol-idx (range vcols)
+            :let[{:keys [img size]} (row-tiles vcol-idx)]]
+        (assoc (texture img) :x vcol-idx :y vrow-idx :width (first size) :height (second size))))))
 
 (defscreen main-screen
   :on-show
   (fn [screen entities]
     (update! screen :renderer (stage) :camera (orthographic) :world (random-world world-size))
-    (assoc (label "Hello world!" (color :white)) :x 5 :y 40))
+;;     (update! screen :world-map (get-world-entities screen))
+    (let [text1 (assoc (label "Hello world!" (color :white)) :x 5 :y 40)
+          text2 (assoc (label "Hello world!" (color :white)) :x 5 :y 40)]
+      [text1 text2]))
 
   :on-render
   (fn [screen entities]
@@ -195,14 +200,14 @@
     (set-screen! this title-screen debug-screen)))
 
 
-
-
-(-> title-screen :entities deref)
+;; (-> title-screen :entities deref)
 
 (-> main-screen :entities deref)
-
 (-> main-screen :screen deref)
 
-(-> debug-screen :entities deref)
 
-(-> win-screen :entities deref)
+
+;; (-> debug-screen :entities deref)
+
+;; (-> win-screen :entities deref)
+

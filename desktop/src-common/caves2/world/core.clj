@@ -3,13 +3,13 @@
             [play-clj.g2d :refer :all]))
 
 (defrecord World [tiles])
-(defrecord Tile [kind img])
+(defrecord Tile [kind img size])
 
 (def tiles
-  {:floor (new Tile :floor "stone-black.jpg")
-   :wall (new Tile :wall "stone-wall.jpg")})
+  {:floor (new Tile :floor "stone-black.jpg" [1 1])
+   :wall (new Tile :wall "stone-wall.jpg" [1 1])})
 
-(defn get-tile [tiles x y]
+(defn- get-tile [tiles x y]
   (get-in tiles [y x]))
 
 (defn- random-tiles [world-size]
