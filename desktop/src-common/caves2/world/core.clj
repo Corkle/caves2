@@ -22,5 +22,3 @@
 
 (defn random-world [world-size]
   (new World (random-tiles world-size)))
-
-(random-world [3 3])
