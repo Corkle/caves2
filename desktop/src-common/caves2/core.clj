@@ -2,11 +2,12 @@
   (:require [play-clj.core :refer :all]
             [play-clj.ui :refer :all]
             [play-clj.g2d :refer :all]
-            [caves2.world.core :refer [random-world]]))
+            [caves2.world.core :refer [random-world smooth-world]]
+            [caves2.ui.entities.core :refer [get-tile-entities]]))
 
 (declare caves2-game title-screen main-screen debug-screen win-screen lose-screen)
-(def scale-up (partial * 20))
-(def view-size [10 8])
+(def scale-up (partial * 40))
+(def view-size [20 15])
 (def screen-size (vec (map scale-up view-size)))
 (def world-size [100 60])
 
@@ -22,13 +23,6 @@
           block1 (assoc (texture "stone-black.jpg") :width (scale-up 2) :height (scale-up 2) :x (scale-up 0) :y (scale-up 1))
           block2 (assoc (texture "stone-wall.jpg") :width (scale-up 1) :height (scale-up 1) :x (scale-up 2) :y (scale-up 1))]
           [text1 text2 block1 block2]))
-;;     [(assoc (texture "stone-black.jpg") :width (scale-up 2) :height (scale-up 2) :x (scale-up 0) :y (scale-up 1))
-;;      (assoc (texture "stone-wall.jpg") :width (scale-up 1) :height (scale-up 1) :x (scale-up 2) :y (scale-up 1))
-;;      (assoc (texture "stone-wall.jpg") :width (scale-up 1) :height (scale-up 1) :x (scale-up 3) :y (scale-up 1))
-;;      (assoc (texture "stone-wall.jpg") :width (scale-up 1) :height (scale-up 1) :x (scale-up 2) :y (scale-up 2))
-;;      (assoc (texture "stone-wall.jpg") :width (scale-up 1) :height (scale-up 1) :x (scale-up 3) :y (scale-up 2))
-;;      (assoc (texture "stone-wall.jpg") :width (scale-up 2) :height (scale-up 2) :x (scale-up 4) :y (scale-up 1))
-;;      ])
 
   :on-render
   (fn [screen entities]
@@ -38,7 +32,7 @@
   :on-key-down
   (fn [screen entities]
     (cond
-      (= (:key screen) (key-code :enter)) (set-screen! caves2-game main-screen debug-screen)
+      (= (:key screen) (key-code :enter)) (on-gl (set-screen! caves2-game main-screen debug-screen))
       (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen))))
 
   :on-resize
@@ -50,40 +44,15 @@
 ;; Main Screen
 ;; ====================================================================================
 
-(defn get-world-entities [screen]
-  (let [world (:world screen)
-        tiles (:tiles world)
-        [cols rows] view-size
-        vcols cols
-        vrows rows
-        start-x 0
-        start-y 0
-        end-x (+ start-x vcols)
-        end-y (+ start-y vrows)]
-    (flatten (for [[vrow-idx mrow-idx] (map vector (range 0 vrows) (range start-y end-y))
-            :let [row-tiles (subvec (tiles mrow-idx) start-x end-x)]]
-      (for [vcol-idx (range vcols)
-            :let[{:keys [img size]} (row-tiles vcol-idx)]]
-        (assoc (label "X" (color :yellow)) :x (scale-up vcol-idx) :y (scale-up vrow-idx))
-;;         (assoc (texture img) :x (scale-up vcol-idx) :y (scale-up vrow-idx) :width (scale-up (first size)) :height (scale-up (second size)))
-;;         (hash-map :img img :x vcol-idx :y vrow-idx :width (first size) :height (second size))
-;;           (texture "stone-wall.jpg")
-        )))))
-
-
-
 (defscreen main-screen
   :on-show
   (fn [screen entities]
-    (update! screen :renderer (stage) :camera (orthographic) :world (random-world world-size)
-;;              :world-map (get-world-entities screen)
-             )
-;;     (update! screen)
-    (let [text1 (assoc (label "Hello world!" (color :white)) :x 5 :y 40)
-          text2 (assoc (label "Hello world!" (color :white)) :x 5 :y 40)]
-;;       [text1 text2]
-      (get-world-entities screen)
-;;       (map tile-factory (flatten my-tiles))
+    (let [
+           loaded-screen (update! screen :renderer (stage) :camera (orthographic) :view-size view-size :scale scale-up :world (random-world world-size))
+           tiles (get-tile-entities loaded-screen)
+           text1 (assoc (label "Hello world!" (color :white)) :x 5 :y 40)
+           text2 (assoc (label "Hello world!" (color :white)) :x 5 :y 80)]
+        [tiles text1 text2]
       ))
 
   :on-render
@@ -95,7 +64,8 @@
   (fn [screen entities]
     (cond
       (= (:key screen) (key-code :enter)) (set-screen! caves2-game win-screen debug-screen)
-;;       (= (:key screen) (key-code :r)) (get-world-entities screen)
+      (= (:key screen) (key-code :r)) (get-tile-entities screen)
+      (= (:key screen) (key-code :t)) (get-tile-entities (update! screen :world (smooth-world (:world screen))))
       :else (set-screen! caves2-game lose-screen debug-screen)))
 
   :on-resize
@@ -218,10 +188,10 @@
     (set-screen! this title-screen debug-screen)))
 
 
-;; (-> title-screen :entities deref)
+(-> title-screen :entities deref)
 
 (-> main-screen :entities deref)
-;; (-> main-screen :screen deref)
+(-> main-screen :screen deref)
 
 
 
