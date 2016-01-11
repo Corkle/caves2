@@ -4,8 +4,8 @@
 (defrecord Tile [kind img size])
 
 (def tiles
-  {:floor (new Tile :floor "grass.jpg" [1 1])
-   :wall (new Tile :wall "wood.jpg" [1 1])})
+  {:floor (new Tile :floor "stone-wall-16.jpg" [1 1])
+   :wall (new Tile :wall "wood-16.jpg" [1 1])})
 
 (defn- get-tile [tiles x y]
   (get-in tiles [y x]))
