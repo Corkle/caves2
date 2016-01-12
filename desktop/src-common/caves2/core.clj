@@ -3,13 +3,21 @@
             [play-clj.ui :refer :all]
             [play-clj.g2d :refer :all]
             [caves2.world.core :refer [random-world smooth-world]]
-            [caves2.ui.entities.core :refer [get-tile-entities refresh-tiles move]]))
+            [caves2.ui.entities.core :refer [draw-tiles move]]
+            [caves2.entities.player :refer [make-player]]))
 
-(declare caves2-game title-screen main-screen debug-screen win-screen lose-screen)
-(def scale-up (partial * 40))
-(def view-size [20 15])
+(declare caves2-game title-screen main-screen tiles-screen debug-screen win-screen lose-screen)
+(defrecord Game [scale view-size world entities])
+
+(def scale-up (partial * 64))
+(def view-size [15 10])
 (def screen-size (vec (map scale-up view-size)))
 (def world-size [100 60])
+(def game-state (atom {}))
+
+(defn new-game []
+  (let [new-world (random-world world-size)]
+    (->Game scale-up view-size new-world {:player (make-player new-world)})))
 
 ;; ====================================================================================
 ;; Title Screen
@@ -32,7 +40,9 @@
   :on-key-down
   (fn [screen entities]
     (cond
-      (= (:key screen) (key-code :enter)) (on-gl (set-screen! caves2-game main-screen debug-screen))
+      (= (:key screen) (key-code :enter)) (do
+                                            (reset! game-state (assoc (new-game) :location [40 20]))
+                                            (on-gl (set-screen! caves2-game tiles-screen main-screen debug-screen)))
       (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen))))
 
   :on-resize
@@ -47,30 +57,64 @@
 (defscreen main-screen
   :on-show
   (fn [screen entities]
+    (update! screen :renderer (stage) :camera (orthographic))
     (let [
-           loaded-screen (update! screen :renderer (stage) :camera (orthographic) :view-size view-size :scale scale-up :world (random-world world-size) :location [40 20])
-           tiles (get-tile-entities loaded-screen)
-           text1 (assoc (label "Hello world!" (color :white)) :x 5 :y 40)
-           text2 (assoc (label "Hello world!" (color :white)) :x 5 :y 80)]
-        [tiles text1 text2]
+;;           new-player (make-player new-world)
+          text1 (assoc (label "Item Bar" (color :white)) :x 5 :y (scale-up (/ 1 2)))]
+        [text1]
       ))
 
   :on-render
   (fn [screen entities]
-    (clear!)
+;;     (clear!)
     (render! screen entities))
 
   :on-key-down
   (fn [screen entities]
     (cond
       (= (:key screen) (key-code :enter)) (set-screen! caves2-game win-screen debug-screen)
-      (= (:key screen) (key-code :r)) (refresh-tiles screen entities)
-      (= (:key screen) (key-code :t)) (refresh-tiles (update! screen :world (smooth-world (:world screen))) entities)
-      (= (:key screen) (key-code :w)) (refresh-tiles (update! screen :location (:location (update-in screen [:location] move [0 1]))) entities)
-      (= (:key screen) (key-code :a)) (refresh-tiles (update! screen :location (:location (update-in screen [:location] move [-1 0]))) entities)
-      (= (:key screen) (key-code :s)) (refresh-tiles (update! screen :location (:location (update-in screen [:location] move [0 -1]))) entities)
-      (= (:key screen) (key-code :d)) (refresh-tiles (update! screen :location (:location (update-in screen [:location] move [1 0]))) entities)
+      (= (:key screen) (key-code :r)) (screen! tiles-screen :on-tiles-changed)
+      (= (:key screen) (key-code :t)) (do
+                                        (swap! game-state update-in [:world] smooth-world)
+                                        (screen! tiles-screen :on-tiles-changed))
+      (= (:key screen) (key-code :w)) (do
+                                        (swap! game-state update-in [:location] move [0 1])
+                                        (screen! tiles-screen :on-tiles-changed))
+      (= (:key screen) (key-code :a)) (do
+                                        (swap! game-state update-in [:location] move [-1 0])
+                                        (screen! tiles-screen :on-tiles-changed))
+      (= (:key screen) (key-code :s)) (do
+                                        (swap! game-state update-in [:location] move [0 -1])
+                                        (screen! tiles-screen :on-tiles-changed))
+      (= (:key screen) (key-code :d)) (do
+                                        (swap! game-state update-in [:location] move [1 0])
+                                        (screen! tiles-screen :on-tiles-changed))
+      (= (:key screen) (key-code :f12)) entities
       :else (set-screen! caves2-game lose-screen debug-screen)))
+
+  :on-resize
+  (fn [screen entities]
+    (height! screen (second screen-size)))
+  )
+
+;; ====================================================================================
+;; Tiles Screen
+;; ====================================================================================
+
+(defscreen tiles-screen
+  :on-show
+  (fn [screen entities]
+    (update! screen :renderer (stage) :camera (orthographic))
+    [(draw-tiles @game-state)])
+
+  :on-render
+  (fn [screen entities]
+    (clear!)
+    (render! screen entities))
+
+  :on-tiles-changed
+  (fn [screen entities]
+    (draw-tiles @game-state))
 
   :on-resize
   (fn [screen entities]
@@ -138,7 +182,8 @@
   :on-show
   (fn [screen entities]
     (update! screen :camera (orthographic) :renderer (stage))
-    (let [debugger (assoc (label "0" (color :green)) :id :debug :x 5 :show-debug true)][debugger]))
+    (let [debugger (assoc (label "0" (color :green)) :id :debug :x 5 :show-debug true)]
+      [debugger]))
 
   :on-render
   (fn [screen entities]
@@ -146,7 +191,7 @@
       (if (:show-debug debugger)
         (do
           (label! debugger :set-text (str "FPS:" (game :fps) " W:" (game :width) " H:" (game :height) " View: " view-size))
-          (render! screen (into [debugger] (rest entities)))))))
+          (render! screen [debugger (rest entities)])))))
 
   :on-resize
   (fn [screen entities]
@@ -156,7 +201,7 @@
   (fn [screen entities]
     (let [debugger (first entities)]
       (cond
-        (= (:key screen) (key-code :f12)) (update debugger :show-debug not)
+        (= (:key screen) (key-code :f12)) [(update debugger :show-debug not) (rest entities)]
         (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen)))))
   )
 
@@ -190,7 +235,12 @@
   :on-create
   (fn [this]
     (set-screen! this title-screen debug-screen)))
+(swap! game-state assoc :game caves2-game)
 
+
+
+
+(deref game-state)
 
 (-> title-screen :entities deref)
 

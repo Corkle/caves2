@@ -21,10 +21,9 @@
 (defn- get-viewport-tiles [tiles start-x end-x start-y end-y]
   (map #(subvec % start-x end-x) (subvec tiles start-y end-y)))
 
-(defn- get-crosshair [screen vcols vrows]
+(defn- get-crosshair [vcols vrows scale]
   (let [crosshair-x (int (/ vcols 2))
-        crosshair-y (int (/ vrows 2))
-        scale (:scale screen)]
+        crosshair-y (int (/ vrows 2))]
     (assoc (texture "red-x.png") :x (scale crosshair-x) :y (scale crosshair-y) :width (scale 1) :height (scale 1))))
 
 (defn- get-world-textures [vrows vcols start-x start-y end-x end-y tiles scale]
@@ -37,21 +36,25 @@
            tiles
            (iterate inc 1)))
 
-(defn get-tile-entities [screen]
-  (let [world (:world screen)
-        location (:location screen)
+(defn draw-tiles [game]
+  (let [world (:world game)
+        location (:location game)
         tiles (:tiles world)
-        scale (:scale screen)
-        [vcols vrows] (:view-size screen)
+        scale (:scale game)
+        [vcols vrows] (:view-size game)
         [start-x start-y end-x end-y] (get-viewport-coords location tiles vcols vrows)
         view-tiles (get-viewport-tiles tiles start-x end-x start-y end-y)
         ]
-      (flatten [(get-world-textures vrows vcols start-x start-y end-x end-y view-tiles scale) (get-location-label location scale 0 1) (get-crosshair screen vcols vrows)])))
-
-(defn refresh-tiles [screen entities]
-  (let [new-tiles (get-tile-entities screen)
-        tile-count (count new-tiles)]
-    [new-tiles (drop tile-count entities)]))
+      (flatten [(get-world-textures vrows vcols start-x start-y end-x end-y view-tiles scale) (get-location-label location scale 0 1) (get-crosshair vcols vrows scale)])))
 
 (defn move [[x y] [dx dy]]
   [(+ x dx) (+ y dy)])
+
+(defn get-player [start-x start-y player scale]
+  (let [[player-x player-y] (:location player)
+        [w h] (:size player)
+        width (scale w)
+        height (scale h)
+        x (- player-x start-x)
+        y (- player-y start-y)]
+    (assoc (texture (:img player) :x x :y y :width width :height height))))
