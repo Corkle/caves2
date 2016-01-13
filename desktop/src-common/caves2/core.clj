@@ -3,7 +3,7 @@
             [play-clj.ui :refer :all]
             [play-clj.g2d :refer :all]
             [caves2.world.core :refer [random-world smooth-world]]
-            [caves2.ui.entities.core :refer [draw-tiles move]]
+            [caves2.ui.entities.core :refer [draw-tiles draw-player move]]
             [caves2.entities.player :refer [make-player]]))
 
 (declare caves2-game title-screen main-screen tiles-screen debug-screen win-screen lose-screen)
@@ -59,9 +59,9 @@
   (fn [screen entities]
     (update! screen :renderer (stage) :camera (orthographic))
     (let [
-;;           new-player (make-player new-world)
+           player (draw-player @game-state)
           text1 (assoc (label "Item Bar" (color :white)) :x 5 :y (scale-up (/ 1 2)))]
-        [text1]
+        [player text1]
       ))
 
   :on-render
@@ -187,10 +187,11 @@
 
   :on-render
   (fn [screen entities]
-    (let [debugger (first entities)]
+    (let [{{{:keys [location]} :player} :entities} @game-state
+          debugger (first entities)]
       (if (:show-debug debugger)
         (do
-          (label! debugger :set-text (str "FPS:" (game :fps) " W:" (game :width) " H:" (game :height) " View: " view-size))
+          (label! debugger :set-text (str "FPS:" (game :fps) " W:" (game :width) " H:" (game :height) " View:" view-size " Loc:" location))
           (render! screen [debugger (rest entities)])))))
 
   :on-resize

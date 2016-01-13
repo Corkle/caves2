@@ -1,4 +1,4 @@
-(ns cave2.coords)
+(ns caves2.coords)
 
 (defn- offset-coords
   "Offset the starting coordinate by the gvien amount, returning the result coordinate."
