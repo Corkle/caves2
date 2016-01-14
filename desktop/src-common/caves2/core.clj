@@ -21,7 +21,7 @@
   (let [new-world (random-world world-size)]
     (-> game
         (assoc :world new-world)
-        (assoc-in [:world :player] (make-player new-world)))))
+        (assoc-in [:world :entities :player] (make-player new-world)))))
 
 (def game-state (atom (new-game)))
 
@@ -196,7 +196,7 @@
 
   :on-render
   (fn [screen entities]
-    (let [{{{:keys [location]} :player} :world} @game-state
+    (let [location (get-in @game-state [:world :entities :player :location])
           debugger (first entities)]
       (if (:show-debug debugger)
         (do

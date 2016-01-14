@@ -40,8 +40,8 @@
 
 (defn draw-tiles [game]
   (let [{:keys [world scale view-size]} game
-        {:keys [player tiles]} world
-        location (:location player)
+        {:keys [entities tiles]} world
+        location (get-in entities [:player :location])
         [start-x start-y end-x end-y] (get-viewport-coords location tiles view-size)
         view-tiles (get-viewport-tiles tiles start-x end-x start-y end-y)
         tile-textures (get-world-textures start-x start-y end-x end-y view-tiles scale)]
@@ -50,7 +50,8 @@
 
 (defn draw-player [game]
   (let [{:keys [world scale view-size]} game
-        {:keys [player tiles]} world
+        {:keys [entities tiles]} world
+        player (:player entities)
         player-pos (:location player)
         [player-x player-y] player-pos
         [start-x start-y end-x end-y] (get-viewport-coords player-pos (:tiles world) view-size)
