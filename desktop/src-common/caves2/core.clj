@@ -64,8 +64,7 @@
   :on-show
   (fn [screen entities]
     (update! screen :renderer (stage) :camera (orthographic))
-    (let [
-           player (draw-player @game-state)
+    (let [player (draw-player @game-state)
           text1 (assoc (label "Item Bar" (color :white)) :x 5 :y (scale-up (/ 1 2)))]
         [player text1]
       ))
@@ -85,16 +84,20 @@
                                         (screen! tiles-screen :on-tiles-changed))
       (= (:key screen) (key-code :w)) (do
                                         (swap! game-state update-in [:world] move-player :n)
-                                        (screen! tiles-screen :on-tiles-changed))
+                                        (screen! tiles-screen :on-tiles-changed)
+                                        [(draw-player @game-state) (rest entities)])
       (= (:key screen) (key-code :a)) (do
                                         (swap! game-state update-in [:world] move-player :w)
-                                        (screen! tiles-screen :on-tiles-changed))
+                                        (screen! tiles-screen :on-tiles-changed)
+                                        [(draw-player @game-state) (rest entities)])
       (= (:key screen) (key-code :s)) (do
                                         (swap! game-state update-in [:world] move-player :s)
-                                        (screen! tiles-screen :on-tiles-changed))
+                                        (screen! tiles-screen :on-tiles-changed)
+                                        [(draw-player @game-state) (rest entities)])
       (= (:key screen) (key-code :d)) (do
                                         (swap! game-state update-in [:world] move-player :e)
-                                        (screen! tiles-screen :on-tiles-changed))
+                                        (screen! tiles-screen :on-tiles-changed)
+                                        [(draw-player @game-state) (rest entities)])
       (= (:key screen) (key-code :f12)) entities
       :else (set-screen! caves2-game lose-screen debug-screen)))
 

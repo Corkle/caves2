@@ -24,6 +24,12 @@
 (defn get-tile-kind [world coord]
   (:kind (get-tile world coord)))
 
+(defn- set-tile [world [x y] tile]
+  (assoc-in world [:tiles y x] tile))
+
+(defn set-tile-floor [world coord]
+  (set-tile world coord (:floor tiles)))
+
 (defn- random-tiles [world-size]
   (let [[cols rows] world-size]
     (letfn [(random-tile []

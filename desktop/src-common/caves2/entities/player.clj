@@ -1,8 +1,9 @@
 (ns caves2.entities.player
   (:use [caves2.entities.core :only [Entity]]
         [caves2.entities.aspects.mobile :only [Mobile move can-move?]]
+        [caves2.entities.aspects.digger :only [Digger dig can-dig?]]
         [caves2.coords :only [destination-coords]]
-        [caves2.world.core :only [find-empty-tile get-tile-kind]]))
+        [caves2.world.core :only [find-empty-tile get-tile-kind set-tile-floor]]))
 
 (defrecord Player [id img location size])
 
@@ -22,6 +23,13 @@
   (can-move? [this world dest]
              (check-tile world dest #{:floor})))
 
+(extend-type Player Digger
+  (dig [this world dest]
+       {:pre [(can-dig? this world dest)]}
+       (set-tile-floor world dest))
+  (can-dig? [this world dest]
+            (check-tile world dest #{:wall})))
+
 (defn make-player [world]
   (->Player :player "cat.png" (find-empty-tile world) [1 1]))
 
@@ -30,4 +38,5 @@
         target (destination-coords (:location player) dir)]
     (cond
       (can-move? player world target) (move player world target)
+      (can-dig? player world target) (dig player world target)
       :else world)))
