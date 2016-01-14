@@ -12,8 +12,8 @@
   (pred (get-tile-kind world dest)))
 
 (extend-type Player Entity
-  (tick [this game]
-        game))
+  (tick [this world]
+        world))
 
 (extend-type Player Mobile
   (move [this world dest]

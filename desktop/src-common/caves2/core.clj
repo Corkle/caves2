@@ -4,20 +4,26 @@
             [play-clj.g2d :refer :all]
             [caves2.world.core :refer [random-world smooth-world]]
             [caves2.ui.entities.core :refer [draw-tiles draw-player move]]
-            [caves2.entities.player :refer [make-player]]))
+            [caves2.entities.player :refer [make-player move-player]]))
 
 (declare caves2-game title-screen main-screen tiles-screen debug-screen win-screen lose-screen)
-(defrecord Game [scale view-size world entities])
+(defrecord Game [scale view-size world])
 
 (def scale-up (partial * 64))
 (def view-size [15 10])
 (def screen-size (vec (map scale-up view-size)))
 (def world-size [100 60])
-(def game-state (atom {}))
 
 (defn new-game []
+  (->Game scale-up view-size nil))
+
+(defn reset-game [game]
   (let [new-world (random-world world-size)]
-    (->Game scale-up view-size new-world {:player (make-player new-world)})))
+    (-> game
+        (assoc :world new-world)
+        (assoc-in [:world :player] (make-player new-world)))))
+
+(def game-state (atom (new-game)))
 
 ;; ====================================================================================
 ;; Title Screen
@@ -41,7 +47,7 @@
   (fn [screen entities]
     (cond
       (= (:key screen) (key-code :enter)) (do
-                                            (reset! game-state (assoc (new-game) :location [40 20]))
+                                            (reset! game-state (assoc (reset-game @game-state) :location [0 0]))
                                             (on-gl (set-screen! caves2-game tiles-screen main-screen debug-screen)))
       (= (:key screen) (key-code :f5)) (on-gl (set-screen! caves2-game title-screen debug-screen))))
 
@@ -78,16 +84,16 @@
                                         (swap! game-state update-in [:world] smooth-world)
                                         (screen! tiles-screen :on-tiles-changed))
       (= (:key screen) (key-code :w)) (do
-                                        (swap! game-state update-in [:location] move [0 1])
+                                        (swap! game-state update-in [:world] move-player :n)
                                         (screen! tiles-screen :on-tiles-changed))
       (= (:key screen) (key-code :a)) (do
-                                        (swap! game-state update-in [:location] move [-1 0])
+                                        (swap! game-state update-in [:world] move-player :w)
                                         (screen! tiles-screen :on-tiles-changed))
       (= (:key screen) (key-code :s)) (do
-                                        (swap! game-state update-in [:location] move [0 -1])
+                                        (swap! game-state update-in [:world] move-player :s)
                                         (screen! tiles-screen :on-tiles-changed))
       (= (:key screen) (key-code :d)) (do
-                                        (swap! game-state update-in [:location] move [1 0])
+                                        (swap! game-state update-in [:world] move-player :e)
                                         (screen! tiles-screen :on-tiles-changed))
       (= (:key screen) (key-code :f12)) entities
       :else (set-screen! caves2-game lose-screen debug-screen)))
@@ -187,7 +193,7 @@
 
   :on-render
   (fn [screen entities]
-    (let [{{{:keys [location]} :player} :entities} @game-state
+    (let [{{{:keys [location]} :player} :world} @game-state
           debugger (first entities)]
       (if (:show-debug debugger)
         (do
